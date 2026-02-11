@@ -1,7 +1,8 @@
 /* ============================================================
    KONFIGURASI UTAMA
 ============================================================ */
-const API_URL = "https://iot4environment.com/for_someone/window.php";
+const API_URL = "/api/filter-air/window";
+
 
 // Interval Refresh Dashboard (5 detik biar kelihatan gerak)
 const REFRESH_MS = 5000; 
@@ -118,7 +119,7 @@ function initCharts() {
 ============================================================ */
 async function fetchData() {
     try {
-        const response = await fetch(`${API_URL}?t=${Date.now()}`);
+        const response = await fetch(`${API_URL}?limit=15&t=${Date.now()}`);
         const result = await response.json();
 
         if (result.status === 'ok') {
