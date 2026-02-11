@@ -1,66 +1,292 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Dashboard Monitoring Kualitas Air & Efektivitas Filter (Asrama Putra Telkom University)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Dashboard berbasis **Laravel** untuk memantau **kualitas air (TDS)** sebelum dan sesudah filter, menghitung **ΔTDS (IN–OUT)** sebagai indikator efektivitas filter, menampilkan **grafik time-series**, serta menyediakan **riwayat data** dan **export CSV**.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Fitur Utama
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **KPI Real-time**
+  - **TDS IN** (sebelum filter)
+  - **TDS OUT** (sesudah filter)
+  - **ΔTDS = TDS IN − TDS OUT**
+  - **Status efektivitas filter** (NORMAL / WARNING) berdasarkan ambang ΔTDS
+- **Grafik interaktif (Chart.js)**
+  - Grafik perbandingan TDS IN vs TDS OUT
+  - Grafik ΔTDS
+- **Riwayat data (15 data terakhir)**
+  - Ditampilkan dalam tabel, data terbaru di bagian atas
+- **Export CSV (backend Laravel)**
+  - Download log dalam format CSV yang kompatibel untuk Excel
+- **Polling data otomatis**
+  - Refresh data setiap interval tertentu (default: 5 detik)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Arsitektur Singkat
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+**Frontend:**
+- Blade (Laravel view) + CSS statis
+- JavaScript (Fetch API) untuk:
+  - mengambil data JSON dari backend
+  - update KPI, grafik, tabel
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+**Backend:**
+- Laravel API endpoint:
+  - `GET /api/filter-air/window` → window data untuk dashboard
+  - `GET /api/filter-air/export` → export CSV dari data log
+- Database menyimpan log pengukuran: `tds_in`, `tds_out`, `measured_at`
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+## Struktur Folder (yang relevan)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+> Struktur lengkap mengikuti standar Laravel, bagian di bawah adalah yang penting untuk dashboard ini.
 
-### Premium Partners
+```
+monitoring-filter-air/
+├─ app/
+│  ├─ Http/Controllers/
+│  │  └─ Api/
+│  │     └─ FilterAirController.php
+│  └─ Models/
+│     └─ FilterAirLog.php
+├─ database/
+│  ├─ migrations/
+│  │  └─ xxxx_xx_xx_create_filter_air_logs_table.php
+│  └─ seeders/ (opsional)
+├─ public/
+│  └─ assets/
+│     └─ dashboards/
+│        └─ filter-air/
+│           ├─ css/
+│           │  └─ style.css
+│           └─ js/
+│              └─ script.js
+├─ resources/
+│  └─ views/
+│     └─ dashboards/
+│        └─ filter-air/
+│           └─ index.blade.php
+├─ routes/
+│  ├─ web.php
+│  └─ api.php
+└─ README.md
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+---
 
-## Contributing
+## Prasyarat
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- PHP **8.1+**
+- Composer
+- MySQL/MariaDB (atau DB lain yang didukung Laravel)
+- Node.js (opsional, **tidak wajib** untuk dashboard ini karena asset statis)
+- Laragon/XAMPP/WAMP (opsional, untuk lokal di Windows)
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Instalasi & Menjalankan di Lokal
 
-## Security Vulnerabilities
+### 1) Clone repository
+```bash
+git clone <repo_url>
+cd monitoring-filter-air
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 2) Install dependency
+```bash
+composer install
+```
 
-## License
+### 3) Setup environment
+Copy `.env.example` menjadi `.env`, lalu set konfigurasi database.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+copy .env.example .env
+php artisan key:generate
+```
+
+Edit `.env` (contoh MySQL):
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=monitoring_filter_air
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+### 4) Migrasi database
+```bash
+php artisan migrate
+```
+
+### 5) Jalankan server
+```bash
+php artisan serve
+```
+Akses dashboard:
+- `http://127.0.0.1:8000/dashboards/filter-air`
+
+---
+
+## Database
+
+### Tabel `filter_air_logs`
+Kolom yang digunakan:
+- `id` (PK)
+- `tds_in` (decimal/float)
+- `tds_out` (decimal/float)
+- `measured_at` (datetime) → waktu pengukuran
+- timestamps (`created_at`, `updated_at`)
+
+> **Catatan:** dashboard mengambil **15 data terakhir** berdasarkan `measured_at` (desc), lalu dibalik agar chart berurutan dari lama → baru.
+
+---
+
+## Endpoint API
+
+### 1) Window data (untuk dashboard)
+**GET** `/api/filter-air/window?limit=15`
+
+**Response (contoh):**
+```json
+{
+  "status": "ok",
+  "data": [
+    {
+      "tds_in": 987.4,
+      "tds_out": 243.77,
+      "waktu": "2026-02-11T07:04:43.000000Z"
+    }
+  ]
+}
+```
+
+**Catatan:**
+- `waktu` adalah representasi ISO dari `measured_at`
+- `limit` default 15
+
+---
+
+### 2) Export CSV
+**GET** `/api/filter-air/export?limit=200`
+
+**Output:**
+- File `.csv` ter-download (stream response)
+- Sudah include UTF-8 BOM agar aman dibuka di Excel
+
+Kolom CSV:
+- `no`
+- `measured_at`
+- `tds_in`
+- `tds_out`
+- `delta_tds`
+
+---
+
+## Cara Kerja Dashboard (Frontend)
+
+### 1) Polling data
+JavaScript melakukan fetch ke endpoint window:
+
+```js
+const API_URL = "/api/filter-air/window";
+setInterval(fetchData, 5000);
+```
+
+### 2) Update KPI
+- Ambil data terakhir (paling baru)
+- Hitung ΔTDS
+- Render ke elemen dengan id:
+  - `kpi-in`, `kpi-out`, `kpi-delta`, `kpi-status`, `kpi-icon`
+- Last update ditampilkan dari timestamp `waktu`
+
+### 3) Status efektivitas filter
+Aturan sederhana (bisa kamu ubah):
+- Jika `ΔTDS < 200` → `WARNING`
+- Selain itu → `NORMAL`
+
+### 4) Grafik
+- Chart 1: `TDS IN` vs `TDS OUT`
+- Chart 2: `ΔTDS`
+- Label waktu dibuat sintetis per 15 menit (grid rapi), agar tampilan konsisten di dashboard
+
+### 5) Tabel riwayat
+- Menampilkan data terbaru di baris paling atas
+- Warna status:
+  - Hijau: Normal
+  - Oranye: Menurun/Warning
+
+---
+
+## Export CSV dari Tombol
+
+Di Blade, tombol export memiliki id:
+
+```html
+<button id="btnExportCsv" class="btn-export">Export CSV</button>
+```
+
+Lalu di JS:
+
+```js
+btn.addEventListener("click", () => {
+  window.location.href = "/api/filter-air/export?limit=5000";
+});
+```
+
+---
+
+## Troubleshooting
+
+### 1) Grafik tidak muncul / skala aneh (0–1)
+Penyebab umum:
+- Konfigurasi `options.scales` diubah setelah chart dibuat → bisa memicu error resolver Chart.js v4
+
+Solusi:
+- Set `options.scales` sejak `initCharts()`
+- Hindari overwrite `options.scales.y` dengan object baru setelah chart dibuat
+
+---
+
+### 2) Asset (CSS/JS) 404
+Pastikan:
+- File berada di `public/assets/...`
+- Blade memanggil asset via helper Laravel:
+
+```html
+<link rel="stylesheet" href="{{ asset('assets/dashboards/filter-air/css/style.css') }}">
+<script src="{{ asset('assets/dashboards/filter-air/js/script.js') }}"></script>
+```
+
+---
+
+### 3) Data kosong di dashboard
+Cek:
+- Endpoint: `GET /api/filter-air/window`
+- DB: tabel `filter_air_logs` berisi data
+- Migrasi sudah jalan: `php artisan migrate`
+
+---
+
+## Roadmap Pengembangan (Opsional)
+
+- Endpoint ingest untuk ESP32:
+  - `POST /api/filter-air/log`
+- Auth untuk dashboard (login)
+- Filter range tanggal untuk tabel & export
+- Multi-stasiun (Asrama Putra, Asrama Putri, Gedung lain)
+- Alert threshold bertingkat (Normal/Warning/Critical)
+- Monitoring parameter lain (pH, Turbidity, Flow, Pressure)
+
+---
+
+## Kontributor
+- Farhan Oktavian (Telkom University)
+
+---
+
+## Lisensi
+Tentukan lisensi yang kamu gunakan (MIT/Apache-2.0/Proprietary). Jika belum, isi bagian ini sesuai kebutuhan.
