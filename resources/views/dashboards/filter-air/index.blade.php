@@ -22,27 +22,27 @@
         <div class="top-cards">
             <div class="card c-purple">
                 <h3>TDS Sebelum Filter (IN)</h3>
-                <div class="value">1023 <span class="unit">ppm</span></div>
-                <div class="sub-text">Terakhir update: 10:15:05</div>
+                <div class="value"><span id="kpi-in">—</span> <span class="unit">ppm</span></div>
+                <div class="sub-text" id="last-update-in">Terakhir update: —</div>
             </div>
 
             <div class="card c-blue">
                 <h3>TDS Sesudah Filter</h3>
-                <div class="value">255 <span class="unit">ppm</span></div>
-                <div class="sub-text">Terakhir update: 10:15:05</div>
+                <div class="value"><span id="kpi-out">—</span> <span class="unit">ppm</span></div>
+                <div class="sub-text" id="last-update-out">Terakhir update: —</div>
             </div>
 
             <div class="card c-orange">
                 <h3>ΔTDS (IN - OUT)</h3>
-                <div class="value">768 <span class="unit">ppm</span></div>
+                <div class="value"><span id="kpi-delta">—</span> <span class="unit">ppm</span></div>
                 <div class="sub-text">Semakin besar = filter semakin efektif</div>
             </div>
 
             <div class="card c-green">
                 <h3>Status Efektivitas Filter</h3>
                 <div style="display: flex; align-items: center; justify-content: center;">
-                    <span class="status-icon">✓</span>
-                    <div class="value">NORMAL</div>
+                    <span class="status-icon" id="kpi-icon">✓</span>
+                    <div class="value" id="kpi-status">—</div>
                 </div>
                 <div class="sub-text">Ambang ΔTDS < 200 Warning</div>
                 </div>
