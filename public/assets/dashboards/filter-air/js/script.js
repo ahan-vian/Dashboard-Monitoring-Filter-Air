@@ -236,7 +236,7 @@ function updateDashboard(data) {
     const minD = Math.floor(Math.min(...dDelta) / 10) * 10;
     const maxD = Math.ceil(Math.max(...dDelta) / 10) * 10;
 
-    
+
 
     chartDelta.update();
 
@@ -282,4 +282,11 @@ window.addEventListener('load', () => {
     initCharts();
     fetchData();
     setInterval(fetchData, REFRESH_MS);
+    const btn = document.getElementById("btnExportCsv");
+    if (btn) {
+        btn.addEventListener("click", () => {
+            window.location.href = "/api/filter-air/export?limit=5000";
+        });
+    }
+
 });
