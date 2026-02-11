@@ -1,7 +1,10 @@
 /* ============================================================
    KONFIGURASI UTAMA
 ============================================================ */
+console.log("FILTER AIR SCRIPT v2 LOADED", new Date().toISOString());
+
 const API_URL = "/api/filter-air/window";
+
 
 
 // Interval Refresh Dashboard (5 detik biar kelihatan gerak)
@@ -86,7 +89,10 @@ function initCharts() {
             animation: { duration: 0 },
             interaction: { mode: 'index', intersect: false },
             plugins: { legend: { position: 'top' } },
-            scales: { y: { beginAtZero: false } }
+            scales: {
+                x: { ticks: { maxRotation: 0, autoSkip: true } },
+                y: { beginAtZero: false } // ✅ jangan di-overwrite lagi di updateDashboard
+            }
         }
     });
 
@@ -109,131 +115,165 @@ function initCharts() {
             responsive: true,
             maintainAspectRatio: false,
             animation: { duration: 0 },
-            plugins: { legend: { display: false } }
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { maxRotation: 0, autoSkip: true } },
+                y: { beginAtZero: false } // ✅
+            }
         }
     });
 }
+
 
 /* ============================================================
    3. FETCH DATA
 ============================================================ */
 async function fetchData() {
     try {
-        const response = await fetch(`${API_URL}?limit=15&t=${Date.now()}`);
+        const response = await fetch(`${API_URL}?limit=15&t=${Date.now()}`, { cache: "no-store" });
         const result = await response.json();
 
-        if (result.status === 'ok') {
+        if (result.status === "ok" && Array.isArray(result.data)) {
             updateDashboard(result.data);
+        } else {
+            console.error("Format API tidak sesuai:", result);
         }
     } catch (error) {
         console.error("Gagal fetch:", error);
     }
 }
 
+
 /* ============================================================
    4. UPDATE DASHBOARD
 ============================================================ */
 function updateDashboard(data) {
+    console.log("updateDashboard rows:", data.length, data[0], data[data.length - 1]);
+
     if (!data || data.length === 0) return;
+    if (!chartComparison || !chartDelta) return;
 
-    // --- LANGKAH PENTING: BUAT LABEL WAKTU SINTETIS ---
-    // Kita abaikan waktu dari database, kita buat sendiri labelnya
-    // agar rapi per 15 menit berakhir di waktu sekarang.
+    // Labels sintetis 15 menit (urut lama -> baru)
     const timeLabels = generateTimeLabels(data.length);
+    const latestTimeLabel = timeLabels[timeLabels.length - 1]; // ✅ FIX: sekarang ada
 
-    // --- A. UPDATE KARTU (Data Terbaru / Paling Kanan) ---
+    // Data terbaru (paling kanan)
     const latestData = data[data.length - 1];
-    const vIn = parseFloat(latestData.tds_in);
-    const vOut = parseFloat(latestData.tds_out);
+
+    // Pastikan angka valid
+    const vIn = Number.parseFloat(latestData.tds_in);
+    const vOut = Number.parseFloat(latestData.tds_out);
+
+    if (!Number.isFinite(vIn) || !Number.isFinite(vOut)) {
+        console.error("Data TDS invalid:", latestData);
+        return;
+    }
+
     const deltaVal = vIn - vOut;
 
-    document.getElementById("kpi-in").textContent = vIn.toFixed(2);
-    document.getElementById("kpi-out").textContent = vOut.toFixed(2);
-    document.getElementById("kpi-delta").textContent = deltaVal.toFixed(2);
-
-    // Status
+    // --- A. KPI ---
+    const kpiIn = document.getElementById("kpi-in");
+    const kpiOut = document.getElementById("kpi-out");
+    const kpiDelta = document.getElementById("kpi-delta");
     const statusEl = document.getElementById("kpi-status");
     const iconEl = document.getElementById("kpi-icon");
 
-    if (deltaVal < 200) {
-        statusEl.textContent = "WARNING";
-        statusEl.style.color = "orange";
-        iconEl.textContent = "!";
-    } else {
-        statusEl.textContent = "NORMAL";
-        statusEl.style.color = "white";
-        iconEl.textContent = "✓";
+    if (kpiIn) kpiIn.textContent = vIn.toFixed(2);
+    if (kpiOut) kpiOut.textContent = vOut.toFixed(2);
+    if (kpiDelta) kpiDelta.textContent = deltaVal.toFixed(2);
+
+    if (statusEl && iconEl) {
+        if (deltaVal < 200) {
+            statusEl.textContent = "WARNING";
+            statusEl.style.color = "orange";
+            iconEl.textContent = "!";
+        } else {
+            statusEl.textContent = "NORMAL";
+            statusEl.style.color = "white";
+            iconEl.textContent = "✓";
+        }
     }
 
-    // Last update (ambil waktu data terbaru)
+    // Last update dari timestamp DB (bukan grid)
     const t = new Date(latestData.waktu);
-    const jam = t.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-
-    document.getElementById("last-update-in").textContent = `Terakhir update: ${jam}`;
-    document.getElementById("last-update-out").textContent = `Terakhir update: ${jam}`;
-
-
-    // Update Teks "Terakhir Update" di pojok
-    const subTexts = document.querySelectorAll('.sub-text');
-    subTexts.forEach(el => {
-        if (el.innerText.includes('update') || el.innerText.includes('Waktu')) {
-            // Tampilkan label waktu sintetis yang rapi (22:30, 22:45, dst)
-            el.innerText = `Waktu Grid: ${latestTimeLabel}`;
-        }
+    const jam = t.toLocaleTimeString("id-ID", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
     });
 
-    // --- B. UPDATE GRAFIK ---
-    const dIn = [];
-    const dOut = [];
-    const dDelta = [];
+    const lastIn = document.getElementById("last-update-in");
+    const lastOut = document.getElementById("last-update-out");
+    if (lastIn) lastIn.textContent = `Terakhir update: ${jam} WIB`;
+    if (lastOut) lastOut.textContent = `Terakhir update: ${jam} WIB`;
 
-    // Kita map data satu per satu
-    data.forEach(row => {
-        dIn.push(parseFloat(row.tds_in));
-        dOut.push(parseFloat(row.tds_out));
-        dDelta.push(parseFloat(row.tds_in) - parseFloat(row.tds_out));
-    });
+    // --- B. GRAFIK ---
+    const dIn = data.map(r => Number.parseFloat(r.tds_in));
+    const dOut = data.map(r => Number.parseFloat(r.tds_out));
+    const dDelta = data.map(r => Number.parseFloat(r.tds_in) - Number.parseFloat(r.tds_out));
 
-    // Masukkan Label Waktu Sintetis ke Grafik
-    chartComparison.data.labels = timeLabels; // Pakai array jam rapi yg kita buat
+    // Filter NaN biar chart gak jadi 0-1
+    if ([...dIn, ...dOut, ...dDelta].some(v => !Number.isFinite(v))) {
+        console.error("Ada nilai NaN di data chart:", { dIn, dOut, dDelta });
+        return;
+    }
+
+    chartComparison.data.labels = timeLabels;
     chartComparison.data.datasets[0].data = dIn;
     chartComparison.data.datasets[1].data = dOut;
+
+    // Auto scaling yang masuk akal
+    const all = dIn.concat(dOut);
+    const minY = Math.floor(Math.min(...all) / 10) * 10;
+    const maxY = Math.ceil(Math.max(...all) / 10) * 10;
+
+
     chartComparison.update();
 
     chartDelta.data.labels = timeLabels;
     chartDelta.data.datasets[0].data = dDelta;
+
+    const minD = Math.floor(Math.min(...dDelta) / 10) * 10;
+    const maxD = Math.ceil(Math.max(...dDelta) / 10) * 10;
+
+    
+
     chartDelta.update();
 
-    // --- C. UPDATE TABEL ---
-    const tbody = document.querySelector('table tbody');
+    // --- C. TABEL (DINAMIS) ---
+    const tbody = document.getElementById("historyBody");
     if (tbody) {
-        tbody.innerHTML = '';
+        tbody.innerHTML = "";
 
-        // Loop MUNDUR (Terbaru di atas)
+        // Terbaru di atas
         for (let i = data.length - 1; i >= 0; i--) {
             const row = data[i];
-            const jamRapi = timeLabels[i]; // Ambil label jam yang sesuai urutan
+            const jamRapi = timeLabels[i];
 
-            const diff = parseFloat(row.tds_in) - parseFloat(row.tds_out);
+            const inVal = Number.parseFloat(row.tds_in);
+            const outVal = Number.parseFloat(row.tds_out);
+            const diff = inVal - outVal;
+
             const statusRow = diff < 200
-                ? '<span style="color:orange;font-weight:bold">Menurun</span>'
-                : '<span style="color:green;font-weight:bold">Normal</span>';
+                ? '<span class="status-warning">Menurun</span>'
+                : '<span class="status-normal">Normal</span>';
 
-            // Highlight baris pertama
-            const bgStyle = (i === data.length - 1) ? 'style="background-color: rgba(0,0,0,0.05);"' : '';
+            const bgStyle = (i === data.length - 1) ? 'style="background-color: rgba(0,0,0,0.05);"' : "";
 
-            const tr = `
-                <tr ${bgStyle}>
-                    <td>${data.length - i}</td> <td>${jamRapi}</td> <td>${row.tds_in}</td>
-                    <td>${row.tds_out}</td>
-                    <td>${diff.toFixed(2)}</td>
-                    <td>${statusRow}</td>
-                </tr>
-            `;
-            tbody.innerHTML += tr;
+            tbody.innerHTML += `
+        <tr ${bgStyle}>
+          <td>${data.length - i}</td>
+          <td>${jamRapi}</td>
+          <td>${inVal.toFixed(2)}</td>
+          <td>${outVal.toFixed(2)}</td>
+          <td>${diff.toFixed(2)}</td>
+          <td>${statusRow}</td>
+        </tr>
+      `;
         }
     }
 }
+
 
 /* ============================================================
    5. START

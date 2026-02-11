@@ -80,40 +80,10 @@
                             <th>Status Filter</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>1</td>
-                            <td>10:15:05</td>
-                            <td>1023.56</td>
-                            <td>255.05</td>
-                            <td>768.51</td>
-                            <td class="status-normal">Normal</td>
-                        </tr>
-                        <tr>
-                            <td>2</td>
-                            <td>10:10:05</td>
-                            <td>1030.12</td>
-                            <td>250.40</td>
-                            <td>779.72</td>
-                            <td class="status-normal">Normal</td>
-                        </tr>
-                        <tr>
-                            <td>3</td>
-                            <td>10:05:05</td>
-                            <td>1012.14</td>
-                            <td>248.40</td>
-                            <td>763.74</td>
-                            <td class="status-normal">Normal</td>
-                        </tr>
-                        <tr>
-                            <td>4</td>
-                            <td>10:00:05</td>
-                            <td>1004.20</td>
-                            <td>850.30</td>
-                            <td>153.90</td>
-                            <td class="status-warning">Mulai Menurun</td>
-                        </tr>
+                    <tbody id="historyBody">
+                        <!-- kosongin aja, hapus semua row dummy -->
                     </tbody>
+
                 </table>
             </div>
         </div>
